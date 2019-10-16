@@ -5,7 +5,7 @@ Class Database {
 	public $host   = 'localhost';
 	public $user   = 'user101';
 	public $pass   = 'earlybird';
-	public $dbname = 'db_sso';
+	public $dbname = 'db_ssox';
 
 	public $link;
 	public $error;

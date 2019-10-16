@@ -13,7 +13,9 @@ class MySSOServer extends SSO\Server {
     }
 
     protected function getBrokerInfo($brokerId) {
-        $result = $this->db->select("SELECT apps.app_id, apps.secret FROM users_apps INNER JOIN apps ON users_apps.app_id = apps.app_id WHERE apps.app_id = '$brokerId'");
+        // $result = $this->db->select("SELECT apps.app_id, apps.secret FROM users_roles INNER JOIN apps ON users_apps.app_id = apps.app_id WHERE apps.app_id = '$brokerId'");
+        $result = $this->db->select("SELECT app_id, secret FROM apps WHERE app_id = '$brokerId'");
+        
         $brokers = mysqli_fetch_array($result, MYSQLI_ASSOC);
 
         if ($brokers > 0) {
@@ -49,19 +51,32 @@ class MySSOServer extends SSO\Server {
     }
 
     protected function getUserInfo($username) {
-        $result = $this->db->select("SELECT users.user_id, users.username, users.name, users.nip, apps.app_id, apps.app_url, apps.app_name, apps.app_desc, apps.app_style FROM users_apps RIGHT JOIN users ON users_apps.user_id = users.user_id LEFT JOIN apps ON users_apps.app_id = apps.app_id WHERE users.username = '$username'");
-        $userInfo = [];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $userInfo['username'] = $row['username'];
-            $userInfo['user_id'] = $row['user_id'];
-            $userInfo['name'] = $row['name'];
-            $userInfo['nip'] = $row['nip'];
+        // $result = $this->db->select("SELECT users.user_id, users.username, users.name, users.nip, apps.app_id, apps.app_url, apps.app_name, apps.app_desc, apps.app_style FROM users_roles RIGHT JOIN users ON users_roles.user_id = users.user_id LEFT JOIN apps ON users_roles.app_id = apps.app_id WHERE users.username = '$username'");
+        // grab user data first
+        $qUserInfo = $this->db->select("SELECT user_id, username, name, nip, pangkat, `status` FROM users WHERE users.username = '$username'");
+        $r = mysqli_fetch_assoc($qUserInfo);
 
-            if ($row['app_id'] !== null) {
-                $userInfo['appsid'] = $row['app_id'];
-            }
-            
-            $userInfo['apps'][] = $row;
+        // store in userInfo
+        $userInfo = $r;
+        // convert some data
+        $userInfo['status'] = $userInfo['status'] == "TRUE";
+        $userInfo['apps_data'] = [];
+
+        // grab user's roles in this
+        $result = $this->db->select("SELECT users_roles.role_id, apps.app_id, apps.app_name, roles.role_name
+                                    FROM users_roles
+                                    RIGHT JOIN users ON users_roles.user_id = users.user_id
+                                    LEFT JOIN roles ON users_roles.role_id = roles.role_id
+                                    LEFT JOIN apps ON roles.app_id = apps.app_id
+                                    WHERE users.username = '$username'");
+
+        // append role data into userInfo
+        while ($row = mysqli_fetch_assoc($result)) {
+            $userInfo['apps_data'][$row['app_id']] = $userInfo['apps_data'][$row['app_id']] ?? [
+                'app_name'  => $row['app_name'],
+                'roles'     => []
+            ];
+            $userInfo['apps_data'][$row['app_id']]['roles'][] = $row['role_name'];
         }
         return $userInfo;
     }
