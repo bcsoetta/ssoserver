@@ -25,7 +25,7 @@ if (!$command || !method_exists($ssoServer, $command)) {
     header("HTTP/1.1 404 Not Found");
     header('Content-type: application/json; charset=UTF-8');
     
-    echo json_encode(['server status' => 'ON', 'error' => 'Unknown command'], JSON_PRETTY_PRINT);
+    echo json_encode(['server status' => 'ON', 'error' => 'Unknown command: ' . $command], JSON_PRETTY_PRINT);
     exit();
 } else {
     // echo "Executing command: $command";
