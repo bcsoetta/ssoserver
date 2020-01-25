@@ -1,12 +1,14 @@
 {
     "name": "dukteksoetta/sso.soetta.xyz",
     "require": {
-        "jasny/sso": "^0.3.0"
     },
     "authors": [
         {
             "name": "PDAD Soetta",
             "email": "pdad.soetta@gmail.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "jasny/sso": "^0.3.0"
+    }
 }

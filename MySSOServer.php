@@ -1,15 +1,24 @@
 <?php
 
 use Jasny\ValidationResult;
-use Jasny\SSO;
+use Jasny\SSO\Server;
+use Desarrolla2\Cache\Cache;
+use Desarrolla2\Cache\Adapter;
 
-class MySSOServer extends SSO\Server {
+class MySSOServer extends Server {
 
     private $db;
 
     public function __construct(array $options = []) {
         parent::__construct($options);
         $this->db = new Database();
+    }
+
+    protected function createCacheAdapter()
+    {
+        $adapter = new Adapter\Memcached();
+
+        return new Cache($adapter);
     }
 
     protected function getBrokerInfo($brokerId) {
