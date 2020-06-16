@@ -43,14 +43,14 @@ class MySSOServer extends Server {
         $user = mysqli_fetch_array($result, MYSQLI_ASSOC);
 
         if ($user['username'] !== $username) {
-            return ValidationResult::error("invalid username!");
+            return ValidationResult::error("invalid username");
         }
 
         // generate pass
         // password_hash('123456', PASSWORD_DEFAULT);
 
         if (!password_verify($password, $user['password'])) {
-            return ValidationResult::error('invalid password!');
+            return ValidationResult::error('invalid password');
         }
 
         return ValidationResult::success();
@@ -59,7 +59,7 @@ class MySSOServer extends Server {
     protected function getUserInfo($username) {
         // $result = $this->db->select("SELECT users.user_id, users.username, users.name, users.nip, apps.app_id, apps.app_url, apps.app_name, apps.app_desc, apps.app_style FROM users_roles RIGHT JOIN users ON users_roles.user_id = users.user_id LEFT JOIN apps ON users_roles.app_id = apps.app_id WHERE users.username = '$username'");
         // grab user data first
-        $qUserInfo = $this->db->select("SELECT user_id, username, name, nip, pangkat, `status` FROM users WHERE users.username = '$username' AND users.`status` = 'enabled'");
+        $qUserInfo = $this->db->select("SELECT a.user_id, a.username, a.name, a.nip, a.pangkat, b.kode, b.posisi, b.tempat, a.`status` FROM users a INNER JOIN ref_posisi b ON a.penempatan = b.kode WHERE a.username = '$username' AND a.`status` = 'enabled'");
         $r = mysqli_fetch_assoc($qUserInfo);
 
         // store in userInfo
@@ -69,7 +69,7 @@ class MySSOServer extends Server {
         $userInfo['apps_data'] = [];
 
         // grab user's roles in this
-        $result = $this->db->select("SELECT users_roles.role_id, apps.app_id, apps.app_name, apps.app_style, apps.app_desc, apps.app_url, roles.role_name
+        $result = $this->db->select("SELECT users_roles.role_id, apps.app_id, apps.app_name, apps.app_style, apps.app_desc, apps.app_url, roles.role_name, roles.role
                                     FROM users_roles
                                     RIGHT JOIN users ON users_roles.user_id = users.user_id
                                     LEFT JOIN roles ON users_roles.role_id = roles.role_id
@@ -87,6 +87,7 @@ class MySSOServer extends Server {
                 
             ];
             $userInfo['apps_data'][$row['app_id']]['roles'][] = $row['role_name'];
+            $userInfo['apps_data'][$row['app_id']]['rolex'][] = $row['role'];
         }
         return $userInfo;
     }
