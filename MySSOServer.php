@@ -96,10 +96,32 @@ class MySSOServer extends Server {
         return $userInfo;
     }
 
-    // some extension?
+    // ===============================================================================================================
+    // CUSTOM COMMAND
+    // ===============================================================================================================
+    // grab user data by role
     public function userByRole() {
         try {
             $data = $this->queryUserByRole($_REQUEST[0], $_REQUEST[1]);
+
+            header('Content-type: application/json');
+            echo json_encode([
+                'data' => $data
+            ]);
+            exit();
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage(), $e->getCode());
+        }
+    }
+
+    // grab user by specific id
+    public function userById() {
+        try {
+            // strip parameter from request data
+            $uid = $_REQUEST[0];
+            $activeOnly = $_REQUEST[1] ?? false;
+
+            $data = $this->queryUserById($uid, $activeOnly);
 
             header('Content-type: application/json');
             echo json_encode([
@@ -132,7 +154,8 @@ class MySSOServer extends Server {
             c.name,
             c.nip,
             c.pangkat,
-            c.penempatan
+            c.penempatan,
+            c.status
         FROM
             users_roles a
             JOIN
@@ -163,6 +186,55 @@ class MySSOServer extends Server {
 
         // must have succeed, go for it
         // $data = $this->db->fetch()
+        $data = [];
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+
+        return $data;
+    }
+
+    protected function queryUserById($id, $activeOnly = false) {
+        if (!isset($id)) {
+            throw new BadRequestException("Bad request bitch");
+            return null;
+        }
+        // escape parameter
+        $uid = mysqli_escape_string($this->db->link, $id);
+
+        // return $uid;
+
+        // build query
+        $qString = "
+        SELECT
+            c.user_id,
+            c.username,
+            c.name,
+            c.nip,
+            c.pangkat,
+            c.penempatan,
+            c.status
+        FROM
+            users c
+        WHERE
+            c.user_id = $uid
+        ";
+
+        if ($activeOnly) {
+            $qString .= " AND c.status = 'enabled'";
+        }
+
+        // return $qString;
+
+        // execute query
+        $result = $this->db->select($qString);
+
+        if ($result === false) {
+            throw new NotFoundException("No user with id #{$id}", 404);
+            return null;
+        }
+
         $data = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
