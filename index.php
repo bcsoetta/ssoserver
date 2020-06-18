@@ -5,20 +5,24 @@ require_once 'DB/Database.php';
 require_once 'MySSOServer.php';
 
 // by bowie
-// here we map the so called 'magic-command' from Broker.php
-// into a real method name of the server class
-$commandMap = [
-    'change-password'   => 'changePassword'
-];
+// this function auto convert the hypenated words into camel case
+// so we can directly call server's method without lookup table
+function convertHypenWordsToCamelCase($word) {
+    $c = explode('-', $word);
+    return array_reduce($c, function ($accum, $e) use ($c) {
+        return $accum . ($e == $c[0] ? $e : ucfirst($e));
+    });
+}
 
 // instantiate SSO Server
 $ssoServer = new MySSOServer();
 
 // grab command by checking $_REQUEST globals, defaulting to null
-$command = isset($_REQUEST['command']) ? $_REQUEST['command'] : null;
+$command = isset($_REQUEST['command']) ? convertHypenWordsToCamelCase($_REQUEST['command']) : null;
 
 // convert to real method name if possible
-$command = array_key_exists($command, $commandMap) ? $commandMap[$command] : $command;
+// $command = array_key_exists($command, $commandMap) ? $commandMap[$command] : $command;
+// directly converted above, so we do nothing here
 
 // continue as usual
 if (!$command || !method_exists($ssoServer, $command)) {

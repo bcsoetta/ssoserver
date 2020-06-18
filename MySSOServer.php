@@ -5,6 +5,10 @@ use Jasny\SSO\Server;
 use Desarrolla2\Cache\Cache;
 use Desarrolla2\Cache\Adapter;
 
+class NotFoundException extends \Exception {}
+class BadRequestException extends \Exception {}
+class InternalServerException extends \Exception {}
+
 class MySSOServer extends Server {
 
     private $db;
@@ -90,5 +94,81 @@ class MySSOServer extends Server {
             $userInfo['apps_data'][$row['app_id']]['rolex'][] = $row['role'];
         }
         return $userInfo;
+    }
+
+    // some extension?
+    public function userByRole() {
+        try {
+            $data = $this->queryUserByRole($_REQUEST[0], $_REQUEST[1]);
+
+            header('Content-type: application/json');
+            echo json_encode([
+                'data' => $data
+            ]);
+            exit();
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage(), $e->getCode());
+        }
+    }
+
+    // ===============================================================================================================
+    // PROTECTED MEMBERS
+    // ===============================================================================================================
+    protected function queryUserByRole($roles, $strict = false) {
+        // user must be sober to use this
+        if (!is_array($roles)) {
+            throw new BadRequestException("Bad request bitch!", 400);
+            return null;
+        }
+
+        // flatten the array to quoted list of shiets
+        $role_flat = implode(",", array_map(function ($e) { return "'{$e}'"; }, $roles));
+
+        // build query string
+        $qString = "
+        SELECT
+            c.user_id,
+            c.username,
+            c.name,
+            c.nip,
+            c.pangkat,
+            c.penempatan
+        FROM
+            users_roles a
+            JOIN
+            users c 
+            ON
+                a.user_id = c.user_id
+        WHERE
+            c.`status` <> 0
+            AND
+            a.`status` <> 0
+            AND
+            a.role_id IN (
+                SELECT
+                    b.role_id
+                FROM
+                    roles b
+                WHERE
+                    b.role IN ({$role_flat})
+            )
+        ";
+
+        $result = $this->db->select($qString);
+
+        if ($result === false) {
+            throw new NotFoundException("No data was found in the query", 404);
+            return null;
+        }
+
+        // must have succeed, go for it
+        // $data = $this->db->fetch()
+        $data = [];
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+
+        return $data;
     }
 }
