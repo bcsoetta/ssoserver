@@ -189,6 +189,7 @@ class MySSOServer extends Server {
         $data = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
+            $row['user_id'] = (int) $row['user_id'];
             $data[] = $row;
         }
 
@@ -238,6 +239,7 @@ class MySSOServer extends Server {
         $data = [];
 
         while ($row = mysqli_fetch_assoc($result)) {
+            $row['user_id'] = (int) $row['user_id'];
             $data[] = $row;
         }
 
